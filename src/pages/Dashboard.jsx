@@ -127,8 +127,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div className="dashboard-container" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <header className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Health Dashboard</h1>
           <p style={{ color: 'var(--text-muted)' }}>Tracking your vitals</p>
@@ -151,7 +151,7 @@ const Dashboard = () => {
               <label style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Weight (kg)</label>
               <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="bp-input-grid" style={{ display: 'grid', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Systolic</label>
                 <input type="number" value={systolic} onChange={(e) => setSystolic(e.target.value)} required />
@@ -181,12 +181,12 @@ const Dashboard = () => {
                 {latestRecord.systolic}/{latestRecord.diastolic}
               </div>
               <div style={{ color: bpStatus.color, fontWeight: '600', marginBottom: '16px' }}>{bpStatus.label}</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-                <div style={{ background: 'var(--glass)', padding: '12px', borderRadius: '12px', flex: 1 }}>
+              <div className="latest-status-stats" style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                <div className="stat-item" style={{ background: 'var(--glass)', padding: '12px', borderRadius: '12px', flex: 1 }}>
                    <Scale size={18} />
                    <div>{latestRecord.weight} kg</div>
                 </div>
-                <div style={{ background: 'var(--glass)', padding: '12px', borderRadius: '12px', flex: 1 }}>
+                <div className="stat-item" style={{ background: 'var(--glass)', padding: '12px', borderRadius: '12px', flex: 1 }}>
                    <History size={18} />
                    <div style={{ fontSize: '12px' }}>{latestRecord.timestamp ? new Date(latestRecord.timestamp.toDate()).toLocaleDateString() : 'Pending'}</div>
                 </div>
@@ -198,13 +198,14 @@ const Dashboard = () => {
         </section>
       </div>
 
-      <section className="glass-card" style={{ height: '400px' }}>
+      <section className="glass-card" style={{ minHeight: '400px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>30-Day Trends</h2>
         <div style={{ height: '300px' }}>
           <LineChartJS data={chartData} options={chartOptions} />
         </div>
       </section>
     </div>
+
   );
 };
 
