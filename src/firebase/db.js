@@ -6,7 +6,10 @@ import {
   orderBy, 
   onSnapshot,
   serverTimestamp,
-  limit
+  limit,
+  deleteDoc,
+  updateDoc,
+  doc
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -39,4 +42,26 @@ export const subscribeToHealthRecords = (userId, callback) => {
     });
     callback(records);
   });
+};
+
+export const deleteHealthRecord = async (recordId) => {
+  try {
+    await deleteDoc(doc(db, "health_records", recordId));
+  } catch (e) {
+    console.error("Error deleting document: ", e);
+    throw e;
+  }
+};
+
+export const updateHealthRecord = async (recordId, data) => {
+  try {
+    const docRef = doc(db, "health_records", recordId);
+    await updateDoc(docRef, {
+      ...data,
+      lastUpdated: serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Error updating document: ", e);
+    throw e;
+  }
 };

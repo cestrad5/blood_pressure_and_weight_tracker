@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { logout } from '../firebase/auth';
-import { addHealthRecord, subscribeToHealthRecords } from '../firebase/db';
+import { addHealthRecord, subscribeToHealthRecords, deleteHealthRecord, updateHealthRecord } from '../firebase/db';
 import { getBloodPressureStatus } from '../utils/healthLogic';
 import { 
   Chart as ChartJS, 
@@ -14,7 +14,7 @@ import {
   Legend as ChartLegend 
 } from 'chart.js';
 import { Line as LineChartJS } from 'react-chartjs-2';
-import { LogOut, Activity, Scale, Heart, History, Plus } from 'lucide-react';
+import { LogOut, Activity, Scale, Heart, History, Plus, Trash2, Edit2, X } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [diastolic, setDiastolic] = useState('');
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -47,22 +48,59 @@ const Dashboard = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await addHealthRecord(user.uid, {
+      const data = {
         weight: parseFloat(weight),
         systolic: parseInt(systolic),
         diastolic: parseInt(diastolic)
-      });
+      };
+
+      if (editingId) {
+        await updateHealthRecord(editingId, data);
+        setEditingId(null);
+      } else {
+        await addHealthRecord(user.uid, data);
+      }
+      
       setWeight('');
       setSystolic('');
       setDiastolic('');
     } catch (err) {
-      alert("Error adding record: " + err.message);
+      alert("Error saving record: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const latestRecord = records[records.length - 1];
+  const handleEdit = (record) => {
+    setEditingId(record.id);
+    setWeight(record.weight.toString());
+    setSystolic(record.systolic.toString());
+    setDiastolic(record.diastolic.toString());
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setWeight('');
+    setSystolic('');
+    setDiastolic('');
+  };
+
+  const handleDelete = async (recordId) => {
+    if (window.confirm("Are you sure you want to delete this record?")) {
+      try {
+        await deleteHealthRecord(recordId);
+      } catch (err) {
+        alert("Error deleting record: " + err.message);
+      }
+    }
+  };
+
+  const latestRecord = [...records].sort((a, b) => {
+    const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
+    const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
+    return timeB - timeA;
+  })[0];
   const bpStatus = latestRecord 
     ? getBloodPressureStatus(latestRecord.systolic, latestRecord.diastolic)
     : null;
@@ -143,9 +181,20 @@ const Dashboard = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         <section className="glass-card">
-          <h2 style={{ fontSize: '18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={20} color="var(--primary)" /> New Entry
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {editingId ? <Edit2 size={20} color="var(--warning)" /> : <Plus size={20} color="var(--primary)" />}
+              {editingId ? 'Edit Entry' : 'New Entry'}
+            </h2>
+            {editingId && (
+              <button 
+                onClick={handleCancelEdit}
+                style={{ background: 'transparent', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Weight (kg)</label>
@@ -164,9 +213,15 @@ const Dashboard = () => {
             <button 
               type="submit" 
               disabled={loading}
-              style={{ background: 'var(--primary)', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: '600' }}
+              style={{ 
+                background: editingId ? 'var(--warning)' : 'var(--primary)', 
+                color: 'white', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                fontWeight: '600' 
+              }}
             >
-              {loading ? 'Saving...' : 'Save Record'}
+              {loading ? 'Saving...' : editingId ? 'Update Record' : 'Save Record'}
             </button>
           </form>
         </section>
@@ -198,10 +253,64 @@ const Dashboard = () => {
         </section>
       </div>
 
-      <section className="glass-card" style={{ minHeight: '400px' }}>
+      <section className="glass-card" style={{ minHeight: '400px', marginBottom: '32px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>30-Day Trends</h2>
         <div style={{ height: '300px' }}>
           <LineChartJS data={chartData} options={chartOptions} />
+        </div>
+      </section>
+
+      <section className="glass-card">
+        <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>History</h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                <th style={{ padding: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Date</th>
+                <th style={{ padding: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>BP (mmHg)</th>
+                <th style={{ padding: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Weight (kg)</th>
+                <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: '500' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr key={record.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '12px' }}>
+                    {record.timestamp ? new Date(record.timestamp.toDate()).toLocaleDateString() : 'Pending'}
+                  </td>
+                  <td style={{ padding: '12px', fontWeight: '500' }}>
+                    {record.systolic}/{record.diastolic}
+                  </td>
+                  <td style={{ padding: '12px' }}>{record.weight}</td>
+                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button 
+                        onClick={() => handleEdit(record)}
+                        style={{ background: 'transparent', color: 'var(--primary)', padding: '6px' }}
+                        title="Edit"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(record.id)}
+                        style={{ background: 'transparent', color: 'var(--danger)', padding: '6px' }}
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {records.length === 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
