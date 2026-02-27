@@ -243,7 +243,7 @@ const Dashboard = () => {
                 </div>
                 <div className="stat-item" style={{ background: 'var(--glass)', padding: '12px', borderRadius: '12px', flex: 1 }}>
                    <History size={18} />
-                   <div style={{ fontSize: '12px' }}>{latestRecord.timestamp ? new Date(latestRecord.timestamp.toDate()).toLocaleDateString() : 'Pending'}</div>
+                   <div style={{ fontSize: '12px' }}>{latestRecord.timestamp ? new Date(latestRecord.timestamp.toDate()).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'Pending'}</div>
                 </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ const Dashboard = () => {
               {records.map((record) => (
                 <tr key={record.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                   <td style={{ padding: '12px' }}>
-                    {record.timestamp ? new Date(record.timestamp.toDate()).toLocaleDateString() : 'Pending'}
+                    {record.timestamp ? new Date(record.timestamp.toDate()).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'Pending'}
                   </td>
                   <td style={{ padding: '12px', fontWeight: '500' }}>
                     {record.systolic}/{record.diastolic}

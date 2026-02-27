@@ -83,12 +83,28 @@ input:focus {
   .bp-input-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* Table Mobile Tweaks */
+  table th, table td {
+    padding: 8px !important;
+    font-size: 13px;
+  }
+
+  .glass-card {
+    padding: 16px !important;
+  }
 }
 
 @media (max-width: 480px) {
   .dashboard-header h1 {
     font-size: 24px !important;
   }
+
+  table th, table td {
+    padding: 6px 4px !important;
+    font-size: 12px;
+  }
 }
+
 
 
